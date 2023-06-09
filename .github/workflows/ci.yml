@@ -1,0 +1,41 @@
+name: Build
+'on':
+  push:
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      - name: Install Dependencies
+        run: yarn install
+
+      - name: Create Prod Build
+        run: yarn build
+
+      - name: Publish Docker Image to Github Packages
+        uses: flamestro/build-push-github-action@v1.4.1
+        with:
+          username: ${{ github.repository_owner }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Dispatch Deploy Event to Deployment Repo
+        uses: flamestro/repository-event-dispatch-action@v1.3.0
+        with:
+          token: ${{ secrets.PAT_REPOSITORY_DISPATCH }}
+          event: TRIGGER_DEPLOYMENT_GIF_WEBSITE
+          repository: ${{ secrets.DEPLOYMENT_REPO }}
+          owner: flamestro
